@@ -142,7 +142,7 @@ class GPT(nn.Module):
     def forward(self, tokens):
         x = self.transformer(tokens)  # b, context_len, embed_dim
         x = self.linear(x)
-        x = torch.nn.functional.softmax(x, dim=-1)
+        # x = torch.nn.functional.softmax(x, dim=-1)
 
         return x
 

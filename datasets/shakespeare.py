@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 from torch.utils.data import Dataset
+import torch
 
 class Shakespeare(Dataset):
     def __init__(self, data_dir, target_size, train, context_len):
@@ -22,5 +23,6 @@ class Shakespeare(Dataset):
     def __getitem__(self, idx):
         start_idx = np.random.randint(0, len(self.data) - self.context_len - 1)
         x = self.data[start_idx:start_idx + self.context_len]
-        return x
+        y = self.data[start_idx + 1:start_idx + 1 + self.context_len]
+        return torch.from_numpy(x).long(), torch.from_numpy(y).long()
         
