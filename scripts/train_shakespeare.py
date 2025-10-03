@@ -6,7 +6,7 @@ from datasets.shakespeare import Shakespeare
 from params_proto import ParamsProto
 from model.transformer import GPT
 from model.util import count_parameters
-
+from datetime import datetime
 
 class Args(ParamsProto):
     data_dir = "/Users/alanyu/fortyfive/nanoGPT/data/shakespeare_char/"
@@ -18,14 +18,13 @@ class Args(ParamsProto):
 
     vocab_size = 50304
     context_len = 1024
-    n_layer = 8
-    n_head = 8
-    n_embd = 512
+    num_layers = 8
+    num_heads = 8
+    embed_dim = 512
     dropout = 0.1
     n_epoch = 2_000
-
+    
     device = "cpu"
-
 
 def main(**deps):
     Args._update(**deps)
@@ -56,18 +55,15 @@ def main(**deps):
     )
 
     gpt = GPT(
-        embed_dim=Args.n_embd,
+        embed_dim=Args.embed_dim,
         context_len=Args.context_len,
         vocab_size=Args.vocab_size,
-        num_heads=Args.n_head,
-        num_layers=Args.n_layer,
+        num_heads=Args.num_heads,
+        num_layers=Args.num_layers,
         dropout=Args.dropout,
     )
     
-    
-    
     print(f"Params: {count_parameters(gpt, True) / 1e6:.2f} M")
-    
 
     dtype = (
         "bfloat16" if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else "float16"
@@ -106,15 +102,24 @@ def main(**deps):
         optimizer.step()
         print(f"epoch {epoch} train loss: {loss.item():.4f}")
 
+    log_dir = f"../outputs/gpt_shakespeare/{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    import os
+    os.makedirs(log_dir, exist_ok=True)
+    torch.save(gpt.state_dict(), f"{log_dir}/last.pt")
+    
+    with open(f"{log_dir}/args.pkl", 'wb') as f:
+        import pickle
+        pickle.dump(dict(**vars(Args)), f)
 
 if __name__ == "__main__":
     main(
         context_len=64,
         batch_size=12,
-        n_layer=4,
-        n_head=4,
+        num_layers=4,
+        num_heads=4,
         vocab_size=65,
-        n_embd=128,
+        embed_dim=128,
+        n_epoch=2_000,
         dropout=0.0,
         device="mps",
         grad_accumulation_steps=1,

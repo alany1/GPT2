@@ -3,6 +3,7 @@ from torch import nn
 from torchtyping import TensorType
 
 from model.util import count_parameters
+import torch.nn.functional as F
 
 
 class MultiHeadAttention(nn.Module):
@@ -106,6 +107,7 @@ class Transformer(nn.Module):
             )
 
         self.num_layers = num_layers
+        self.context_len = context_len
 
     def forward(self, tokens: TensorType["b", "context_len"]):
         x = self.token_embedding(tokens) + self.pos_embedding(torch.arange(tokens.size(1), device=tokens.device))[None, ...]
@@ -120,6 +122,7 @@ class Transformer(nn.Module):
 class GPT(nn.Module):
     def __init__(
         self,
+        *,
         embed_dim,
         context_len,
         vocab_size,
@@ -138,6 +141,7 @@ class GPT(nn.Module):
         )
 
         self.linear = nn.Linear(embed_dim, vocab_size)
+        self.context_len = context_len
 
     def forward(self, tokens):
         x = self.transformer(tokens)  # b, context_len, embed_dim
@@ -145,6 +149,21 @@ class GPT(nn.Module):
         # x = torch.nn.functional.softmax(x, dim=-1)
 
         return x
+
+    def sample(self, context, n_new_tokens, temperature=1.0):
+        out = context[:, :]
+        for step in range(n_new_tokens):
+            # clip context: b, context_len
+            context = context[:, -self.context_len :]
+            logits = self(context) / temperature
+
+            probs = F.softmax(logits, dim=-1)
+            next_token = torch.multinomial(probs[:, -1, :], num_samples=1)
+
+            context = torch.cat((context, next_token), dim=1)
+            out = torch.cat((out, next_token), dim=1)
+
+        return out
 
 
 if __name__ == "__main__":
