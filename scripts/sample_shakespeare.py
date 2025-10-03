@@ -53,7 +53,7 @@ def main(*, log_dir, device, num_tokens, num_samples):
 
 if __name__ == '__main__':
     main(
-        log_dir="../outputs/gpt_shakespeare/20251004-065016",
+        log_dir="../outputs/gpt_shakespeare/20251004-070032",
         device="cpu",
         num_tokens=500,
         num_samples=10,
